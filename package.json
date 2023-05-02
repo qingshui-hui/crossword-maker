@@ -10,14 +10,16 @@
     "lint:fix": "eslint --fix '**/*.{js,ts}'",
     "prebuild": "npm run clean",
     "start": "ts-node src/main.ts",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "t": "jest --coverage=0 --noStackTrace"
   },
   "engines": {
-    "node": "18.15.0"
+    "node": "18.*"
   },
   "devDependencies": {
     "@eslint-recommended/eslint-config-typescript": "17.0.3",
     "@tsconfig/node18": "1.0.3",
+    "@types/lodash": "^4.14.194",
     "@types/node": "18.15.11",
     "eslint": "8.38.0",
     "eslint-plugin-jest": "27.2.1",
@@ -27,5 +29,8 @@
     "ts-node": "10.9.1",
     "typescript": "5.0.4"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
 }

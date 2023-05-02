@@ -5,7 +5,11 @@ const config: Config = {
   collectCoverage: true,
   collectCoverageFrom: [
     'src/**/*.ts'
-  ]
+  ],
+	reporters:
+	[
+		'<rootDir>/tests/reporter.js',
+	],
 }
 
 export default config
