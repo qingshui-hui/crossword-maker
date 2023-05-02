@@ -11,7 +11,7 @@
     "prebuild": "npm run clean",
     "start": "ts-node src/main.ts",
     "test": "jest --passWithNoTests",
-    "t": "jest --coverage=0 --noStackTrace"
+    "t": "jest --coverage=0"
   },
   "engines": {
     "node": "18.*"
