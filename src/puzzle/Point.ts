@@ -1,9 +1,23 @@
 
+/**
+ * 横方向の場合のみ座標を考えれば、縦方向の場合も算出できるようにするための関数。
+ * 使用箇所を見るときには、xとyの部分は読み飛ばして、dxとdyの部分に注意を払うようにする。
+ * @return 数値2つのタプル
+ */
+function relpoint(x: number, y: number, dx = 0, dy = 0, vertical = false): [number, number] {
+    if (vertical) {
+        return [x + dy, y + dx]
+    } else {
+        return [x + dx, y + dy]
+    }
+}
+
+
 /** a point with x and y coordinates.coordinates */
 class Point {
 
     constructor(
-        public x: number, 
+        public x: number,
         public y: number
     ) {
         // 属性の定義と割り当てを自動で行える
@@ -21,7 +35,7 @@ class CharPoint {
         public readonly x: number,
         public readonly y: number,
         public readonly vertical: boolean,
-    ) {}
+    ) { }
 }
 
 /** the start of a word in the puzzle.
@@ -33,10 +47,11 @@ class AnnotatedPoint {
         public readonly index: number,
         public readonly vertical: boolean,
         public readonly word: string,
-    ) {}
+    ) { }
 }
 
 export {
+    relpoint,
     Point,
     CharPoint,
     AnnotatedPoint

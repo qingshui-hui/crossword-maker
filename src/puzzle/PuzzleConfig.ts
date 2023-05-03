@@ -9,6 +9,7 @@ class PuzzleConfig {
         public readonly width: number = 18,
         public readonly height: number = 18,
         public readonly wrapping: boolean = false,
+        public readonly rules: string[] = []
     ) {}
 }
 

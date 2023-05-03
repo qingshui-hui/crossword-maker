@@ -1,6 +1,7 @@
-import { AnnotatedPoint, CharPoint, Point } from "./Point";
+import { AnnotatedPoint, CharPoint, relpoint } from "./Point";
 import { PuzzleConfig } from "./PuzzleConfig";
 import _, { Dictionary } from "lodash";
+import { WordsNotAdjacentRule } from "./Rules";
 
 class Puzzle {
     /**
@@ -42,13 +43,19 @@ class Puzzle {
 
             const x = index % this.config.width
             const y = Math.floor(index / this.config.width)
-            // TODO 条件を考える
-            if (this.isEmpty(x - 1, y)) {
-                // horizontal
-                list.push(new CharPoint(char, x, y, false))
-            } else if (this.isEmpty(x, y - 1)) {
-                // vertical
-                list.push(new CharPoint(char, x, y, true))
+
+            for (let vertical of [false, true]) {
+                if (
+                    this.isEmpty(...relpoint(x, y, -1, 0, vertical)) &&
+                    (
+                        !this.config.rules.includes(WordsNotAdjacentRule.id) ||
+                        WordsNotAdjacentRule.positionOk(this, x, y, vertical)
+                    )
+                ) {
+                    list.push(new CharPoint(char, x, y, vertical))
+                    // TODO breakする必要があるか確認
+                    break
+                }
             }
         })
         return _.groupBy(list, cp => cp.char)
@@ -62,15 +69,9 @@ class Puzzle {
      */
     copyWithWord(x: number, y: number, vertical: boolean, word: string): Puzzle {
         const newChars = [...this.chars]
-        if (vertical) {
-            _.forEach(word, (char, index) => {
-                newChars[this.toIndex(x, y + index)] = char
-            })
-        } else {
-            _.forEach(word, (char, index) => {
-                newChars[this.toIndex(x + index, y)] = char
-            })
-        }
+        _.forEach(word, (char, index) => {
+            newChars[this.toIndex(...relpoint(x, y, +index, 0, vertical))] = char
+        })
         return new Puzzle(
             newChars,
             this.config,
@@ -93,7 +94,7 @@ class Puzzle {
         return this.chars[this.toIndex(x, y)]
     }
 
-    private isEmpty(x: number, y: number): boolean {
+    isEmpty(x: number, y: number): boolean {
         return this.getChar(x, y) === ' '
     }
 
@@ -106,20 +107,11 @@ class Puzzle {
         const puzzles: Puzzle[] = []
         const handleElement = (
             index: number,
-            point: CharPoint) => {
-            const [x, y, r, b] = point.vertical ?
-                [
-                    point.x,
-                    point.y - index,
-                    point.x,
-                    point.y - index + word.length - 1,
-                ] :
-                [
-                    point.x - index,
-                    point.y,
-                    point.x - index + word.length - 1,
-                    point.y,
-                ]
+            point: CharPoint
+        ) => {
+            const [x, y] = relpoint(point.x, point.y, - index, 0, point.vertical)
+            const [r, b] = relpoint(point.x, point.y, - index + word.length - 1, 0, point.vertical)
+
             if (x >= 0 && y >= 0
                 && b < this.config.height && r < this.config.width
                 && this.fits(word, point.vertical, x, y)
@@ -155,9 +147,8 @@ class Puzzle {
         let connect = false
 
         const sameCharOk = _.every(_.range(word.length).map(index => {
-            const [locX, locY] = vertical ?
-                [x, y + index] :
-                [x + index, y]
+            const [locX, locY] = relpoint(x, y, +index, 0, vertical)
+
             const existingChar = this.getChar(locX, locY)
 
             const same = existingChar === word[index]
@@ -166,23 +157,33 @@ class Puzzle {
             // 一か所でもつながる場所があれば、接続チェックOK
             if (same) connect = true
 
-            // TODO 他の単語と隣接していないかのチェックは生薬
-            return same || isEmpty
+            let ruleCheck = true
+            if (this.config.rules.includes(WordsNotAdjacentRule.id)) {
+                // 空の場合は、両端のマスをチェックする
+                if (isEmpty && !WordsNotAdjacentRule.fitCellOk(this, x, y, vertical)) {
+                    ruleCheck = false
+                }
+            }
 
+            return (same || isEmpty) && ruleCheck
         }))
 
         // 単語の両端をチェック
-        const edgeOk = vertical ?
-            (this.isEmpty(x, y - 1) && this.isEmpty(x, y + word.length)) :
-            (this.isEmpty(x - 1, y) && this.isEmpty(x + word.length, y))
-        
+        // TODO positionsの方で行ってもよいかも
+        // 🔳🔳🔳🔳
+        // 🔵あいう🔵
+        // 🔳🔳🔳🔳
+        const edgeOk = (
+            this.isEmpty(...relpoint(x, y, -1, 0, vertical))
+            && this.isEmpty(...relpoint(x, y, word.length, 0, vertical)))
+
         return connect && sameCharOk && edgeOk
     }
 
     /** 
      * @return a simple text representation of the crossword puzzle, for debugging 
      */
-    public toString = () : string => {
+    public toString = (): string => {
         let board = ''
         this.chars.forEach((char, index) => {
             if (index % this.config.width === 0) {
@@ -286,7 +287,7 @@ class PuzzleManager {
                 return this._generate(puzzle, tail, [head, ...tried])
             }
             const nextPuzzle = options[_.random(options.length - 1)]
-            
+
             return this._generate(nextPuzzle, [...tried, ...tail], [])
         }
     }
