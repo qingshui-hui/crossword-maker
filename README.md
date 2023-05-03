@@ -12,3 +12,13 @@ const data = CrosswordGenerator.generate(words, config)
 
 ```
 
+## 生成されるクロスワードの例
+
+### 密なパターン
+
+![puzzle-dense](docs/resources/puzzle-1.png)
+
+
+### 単語非隣接ルールを適用
+
+![puzzle not adjacent](docs/resources/puzzle-2.png)
