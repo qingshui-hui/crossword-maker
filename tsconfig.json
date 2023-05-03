@@ -6,9 +6,6 @@
     "src/__test__/**/*",
     "**/*.test.*"
   ],
-  "lib": [
-    "lodash-es"
-  ],
 
   "compilerOptions": {
     "outDir": "dist",
@@ -16,6 +13,7 @@
     "target": "ES6",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "declaration": true,
     "sourceMap": true,

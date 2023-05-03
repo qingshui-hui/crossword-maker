@@ -6,10 +6,19 @@ const config: Config = {
   collectCoverageFrom: [
     'src/**/*.ts'
   ],
-	reporters:
-	[
-		'<rootDir>/tests/reporter.js',
-	],
+  reporters:
+    [
+      '<rootDir>/tests/reporter.cjs',
+    ],
+  // transform: {}
+  transformIgnorePatterns: [
+    "<rootDir>/node_modules/(?!lodash-es)"
+  ],
+  // for jest
+  // https://stackoverflow.com/a/54117206/20308611
+  moduleNameMapper: {
+    "^lodash-es$": "lodash"
+  }
 }
 
 export default config
