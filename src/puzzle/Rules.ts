@@ -5,7 +5,7 @@ import { relpoint } from "./Point";
  * 単語非隣接
  */
 class WordsNotAdjacentRule {
-    static id = 'WordsNotAdjacentRule'
+    static readonly id = 'WordsNotAdjacentRule'
 
     static positionOk(puzzle: Puzzle, x: number, y: number, vertical: boolean): boolean {
         if (vertical) {

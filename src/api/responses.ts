@@ -1,6 +1,8 @@
 import { every, range } from "lodash-es";
 import { Puzzle } from "../puzzle/Puzzle";
 import { PuzzleConfig } from "../puzzle/PuzzleConfig";
+import type { ClueInput } from "../types";
+
 
 function puzzleResponse(puzzle: Puzzle, inputWords: string[]) {
     // グリッド作成
@@ -15,20 +17,24 @@ function puzzleResponse(puzzle: Puzzle, inputWords: string[]) {
     })
 
     // 問題の構造を作成
-    const clueDataFormat: any = {
+    // https://github.com/JaredReisinger/react-crossword#cluedata-format
+    const cluesInput = {
         across: {},
         down: {}
+    } as {
+        across: { [key: string]: ClueInput },
+        down: { [key: string]: ClueInput },
     }
     puzzle.getAnnotation().forEach(point => {
         if (point.vertical) {
-            clueDataFormat.across[point.index] = {
+            cluesInput.down[point.index] = {
                 clue: point.word + 'のヒント',
                 answer: point.word,
                 row: point.y,
                 col: point.x,
             }
         } else {
-            clueDataFormat.down[point.index] = {
+            cluesInput.across[point.index] = {
                 clue: point.word + 'のヒント',
                 answer: point.word,
                 row: point.y,
@@ -45,7 +51,7 @@ function puzzleResponse(puzzle: Puzzle, inputWords: string[]) {
 
     return {
         grid,
-        wordList: clueDataFormat,
+        cluesInput,
         unusedWords,
     }
 }
