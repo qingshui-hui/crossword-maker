@@ -1,6 +1,6 @@
-import { AnnotatedPoint, CharPoint, relpoint } from "./Point";
+import { AnnotatedPoint, CharPoint, Point, relpoint } from "./Point";
 import { PuzzleConfig } from "./PuzzleConfig";
-import _, { Dictionary } from "lodash";
+import { every, fill, forEach, get, groupBy, isEmpty, random, range } from "lodash-es";
 import { WordsNotAdjacentRule } from "./Rules";
 
 class Puzzle {
@@ -36,7 +36,7 @@ class Puzzle {
      * for each character available in the puzzle (= Char key), calculates possible locations (= Array[CharPoint])
      * where additional words could be attached to the puzzle
      */
-    get positions(): Dictionary<CharPoint[]> {
+    get positions() {
         const list: CharPoint[] = []
         this.chars.forEach((char, index) => {
             if (char === ' ') return
@@ -58,7 +58,7 @@ class Puzzle {
                 }
             }
         })
-        return _.groupBy(list, cp => cp.char)
+        return groupBy(list, cp => cp.char)
     }
 
     /** 
@@ -69,7 +69,7 @@ class Puzzle {
      */
     copyWithWord(x: number, y: number, vertical: boolean, word: string): Puzzle {
         const newChars = [...this.chars]
-        _.forEach(word, (char, index) => {
+        forEach(word, (char, index) => {
             newChars[this.toIndex(...relpoint(x, y, +index, 0, vertical))] = char
         })
         return new Puzzle(
@@ -78,7 +78,7 @@ class Puzzle {
             [...this.words, word])
     }
 
-    private toIndex(x: number, y: number): number {
+    toIndex(x: number, y: number): number {
         // xに幅以下の負の数が来る場合も考慮する
         return (x + this.config.width) % this.config.width
             + y * this.config.width
@@ -120,7 +120,7 @@ class Puzzle {
             }
         }
         const charIndices: { [key: string]: number[] } = {}
-        _.forEach(word, (char, index) => {
+        forEach(word, (char, index) => {
             if (char in charIndices) {
                 charIndices[char].push(index)
             } else {
@@ -130,8 +130,8 @@ class Puzzle {
 
         // begin loop
         for (const [char, indices] of Object.entries(charIndices)) {
-            const positions = _.get(this.positions, char)
-            if (_.isEmpty(positions)) {
+            const positions = get(this.positions, char)
+            if (isEmpty(positions)) {
                 continue
             }
             for (const point of positions) {
@@ -146,7 +146,7 @@ class Puzzle {
     private fits(word: string, vertical: boolean, x: number, y: number): boolean {
         let connect = false
 
-        const sameCharOk = _.every(_.range(word.length).map(index => {
+        const sameCharOk = every(range(word.length).map(index => {
             const [locX, locY] = relpoint(x, y, +index, 0, vertical)
 
             const existingChar = this.getChar(locX, locY)
@@ -193,13 +193,70 @@ class Puzzle {
         })
         return board
     }
+
+    /** 
+     * @return all annotations for each point in the puzzle that needs to be annotated.
+     *          an annotation represents the start of a word in the puzzle 
+     */
+    getAnnotation() {
+        let words = [...this.words]
+        let index = 1
+
+        const points: AnnotatedPoint[] = []
+        const handleCell = (x: number, y: number,
+            vertical: boolean, horizontal: boolean
+        ) => {
+            const point = new Point(x, y)
+            const vWord = this.getWord(point, true)
+            const hWord = this.getWord(point, false)
+
+            const annotatedPoints = []
+            if (vertical && vWord.length > 1 && words.includes(vWord)) {
+                words = words.filter(w => w !== vWord)
+                annotatedPoints.push(new AnnotatedPoint(x, y, index, true, vWord))
+            }
+            if (horizontal && hWord.length > 1 && words.includes(hWord)) {
+                words = words.filter(w => w !== hWord)
+                annotatedPoints.push(new AnnotatedPoint(x, y, index, false, hWord))
+            }
+            if (annotatedPoints.length > 0) {
+                index += 1
+                points.push(...annotatedPoints)
+            }
+        }
+        // 左から右、上から下の順でインデックスを振る
+        for (const y of range(this.config.height)) {
+            for (const x of range(this.config.width)) {
+                const nonEmpty = !this.isEmpty(x, y)
+                // 上が空白であれば縦の単語
+                const vertical = this.isEmpty(x, y - 1)
+                // 左が空白であれば横の単語
+                const horizontal = this.isEmpty(x - 1, y)
+                if (nonEmpty && (vertical || horizontal)) {
+                    handleCell(x, y, vertical, horizontal)
+                }
+            }
+        }
+        return points
+    }
+
+    /** @return reconstruct the word at the given point, assuming the given orientation */
+    private getWord(point: Point, vertical: boolean): string {
+        let word = ''
+        for (const i of range(Math.max(this.config.width, this.config.height))) {
+            const char = this.getChar(...relpoint(point.x, point.y, +i, 0, vertical))
+            if (char === ' ') break
+            word += char
+        }
+        return word
+    }
 }
 
 class PuzzleManager {
 
     /** @return an empty puzzle of the given size */
     static empty(config: PuzzleConfig): Puzzle {
-        const chars = _.fill(Array(config.width * config.height), ' ')
+        const chars = fill(Array(config.width * config.height), ' ')
         return new Puzzle(chars, config, [])
     }
 
@@ -240,15 +297,15 @@ class PuzzleManager {
     private static initial(emptyPuzzle: Puzzle, word: string, vertical: boolean): Puzzle {
         if (vertical) {
             return emptyPuzzle.copyWithWord(
-                _.random(emptyPuzzle.config.width - 1),
-                _.random(emptyPuzzle.config.height - word.length),
+                random(emptyPuzzle.config.width - 1),
+                random(emptyPuzzle.config.height - word.length),
                 vertical,
                 word
             )
         } else {
             return emptyPuzzle.copyWithWord(
-                _.random(emptyPuzzle.config.width - word.length),
-                _.random(emptyPuzzle.config.height - 1),
+                random(emptyPuzzle.config.width - word.length),
+                random(emptyPuzzle.config.height - 1),
                 vertical,
                 word
             )
@@ -273,7 +330,7 @@ class PuzzleManager {
     private static _generate(puzzle: Puzzle, words: string[], tried: string[]): Puzzle {
         // 末尾再帰
         // https://zenn.dev/kj455/articles/dfa23c8357b274
-        if (_.isEmpty(words)) {
+        if (isEmpty(words)) {
             return puzzle
         } else {
             const head = words[0]
@@ -283,10 +340,10 @@ class PuzzleManager {
                 return this._generate(puzzle, tail, tried)
             }
             const options = puzzle.addWord(head)
-            if (_.isEmpty(options)) {
+            if (isEmpty(options)) {
                 return this._generate(puzzle, tail, [head, ...tried])
             }
-            const nextPuzzle = options[_.random(options.length - 1)]
+            const nextPuzzle = options[random(options.length - 1)]
 
             return this._generate(nextPuzzle, [...tried, ...tail], [])
         }

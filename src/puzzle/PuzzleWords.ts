@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { countBy, map, sum, sortBy } from 'lodash-es'
 
 class PuzzleWords {
 
@@ -6,14 +6,14 @@ class PuzzleWords {
      *          this is the most efficient way of incrementally adding words to a puzzle. */
     static sortByBest(words: string[]): string[] {
         const allChars = words.join('').split('')
-        const frequency = _.countBy(allChars, c => c)
+        const frequency = countBy(allChars, c => c)
 
         // 他の単語と一致する文字がない場合は0になる
-        const rateWord = (word: string) => 
-            _.sum(_.map(word, c => frequency[c])) - word.length
+        const rateWord = (word: string) =>
+            sum(map(word, c => frequency[c])) - word.length
 
         // console.debug('word rates', words.map(rateWord))
-        return _.sortBy(words, rateWord).reverse()
+        return sortBy(words, rateWord).reverse()
     }
 }
 

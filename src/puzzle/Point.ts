@@ -44,6 +44,8 @@ class CharPoint {
  * @param word the word that starts at the annotated position */
 class AnnotatedPoint {
     constructor(
+        public readonly x: number,
+        public readonly y: number,
         public readonly index: number,
         public readonly vertical: boolean,
         public readonly word: string,
