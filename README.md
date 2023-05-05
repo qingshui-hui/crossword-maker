@@ -5,7 +5,7 @@
 ## 使用例
 
 ```
-const config = new PuzzleConfig(12, 12, false, [
+const config = new PuzzleConfig(12, 12, [
   'WordsNotAdjacentRule'
 ])
 const data = CrosswordGenerator.generate(words, config)
